@@ -1,0 +1,35 @@
+# DonutRTP Configuration
+
+# General Settings
+cooldown-in-seconds: 10
+waiting-time: 5
+max-attempts: 50  # Maximum number of attempts to find a safe location
+
+# Messages
+messages:
+  usage: '&7Usage: &b/donutrtp <world>'
+  no-permission: '&7You do not have permission to use this command!'
+  world-not-found: '&7World &b{world} &7not found!'
+  world-not-configured: '&7Random teleport is not configured for world &b{world}'
+  teleport-cancelled: '&7Teleportation cancelled!'
+  teleporting: '&7Teleporting in &b{time} &7second(s)...'
+  teleport-success: '&7You have been teleported to a random location!'
+  cooldown-message: '&7You must wait &b{time} &7seconds before using this command again!'
+  teleport-failed: '&7Could not find a safe location after &b%attempts% &7attempts! Please try again.'
+  searching: '&7Searching for a safe location...'
+  player-only: '&7This command can only be used by players!'
+  cooldown-bypass: '&7Cooldown bypassed!'
+  config-reloaded: '&7Configuration has been reloaded!'
+
+# World Settings
+worlds:
+  world:
+    min-range: 150
+    max-range: 1500
+  world_nether:
+    min-range: 100
+    max-range: 1000
+  world_the_end:
+    min-range: 200
+    max-range: 2000
+  # Add more worlds as needed

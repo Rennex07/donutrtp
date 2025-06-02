@@ -1,0 +1,24 @@
+name: DonutRTP
+version: '1.0.5'
+main: net.zytonal.donutrtp.DonutRTP
+api-version: '1.21'
+author: zytonal
+logger: DonutRTP
+
+commands:
+  donutrtp:
+    description: Teleport to a random location in the specified world
+    usage: |
+      /<command> <world> - Teleport to a random location
+      /<command> reload - Reload the plugin configuration
+    permission: donutrtp.use
+    permission-message: '&7You do not have permission to use this command.'
+    tab-completer: net.zytonal.donutrtp.commands.DonutRTPTabCompleter
+
+permissions:
+  donutrtp.use:
+    description: Allows the player to use the /donutrtp command
+    default: true
+  donutrtp.bypass.cooldown:
+    description: Allows bypassing the command cooldown
+    default: op

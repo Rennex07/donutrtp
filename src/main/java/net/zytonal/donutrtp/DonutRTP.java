@@ -15,13 +15,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.ChatColor;
 import org.bukkit.scheduler.BukkitRunnable;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import net.zytonal.donutrtp.commands.DonutRTPTabCompleter;
 import net.zytonal.donutrtp.world.WorldType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class DonutRTP extends JavaPlugin {
+public class DonutRTP extends JavaPlugin implements Listener {
     private final Random random = new Random();
     private FileConfiguration config;
     private final Map<String, WorldSettings> worldSettings = new HashMap<>();
@@ -31,6 +36,36 @@ public class DonutRTP extends JavaPlugin {
     private int waitingTime;
     private int maxAttempts;
     private Map<String, String> messages = new HashMap<>();
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        TeleportTask task = teleportTasks.get(player.getUniqueId());
+        if (task != null && task.countdown > 0) {
+            // Check if player actually moved a block
+            if (event.getFrom().getBlockX() != event.getTo().getBlockX() || 
+                event.getFrom().getBlockY() != event.getTo().getBlockY() || 
+                event.getFrom().getBlockZ() != event.getTo().getBlockZ()) {
+                cancelTeleportTask(player.getUniqueId(), "§cTeleport cancelled - you moved!");
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDamage(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            cancelTeleportTask(player.getUniqueId(), "§cTeleport cancelled - you took damage!");
+        }
+    }
+
+    @EventHandler
+    public void onPlayerAttack(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player) {
+            Player player = (Player) event.getDamager();
+            cancelTeleportTask(player.getUniqueId(), "§cTeleport cancelled - you attacked someone!");
+        }
+    }
 
     private static class TeleportTask {
         final Player player;
@@ -71,6 +106,9 @@ public class DonutRTP extends JavaPlugin {
         // Register command executor and tab completer
         getCommand("donutrtp").setExecutor(this);
         getCommand("donutrtp").setTabCompleter(new DonutRTPTabCompleter(this));
+        
+        // Register event listeners
+        getServer().getPluginManager().registerEvents(this, this);
         
         getLogger().info("DonutRTP has been enabled!");
     }
@@ -235,17 +273,13 @@ public class DonutRTP extends JavaPlugin {
                     return;
                 }
                 
-                if (task.safeLocation != null) {
-                    if (task.countdown <= 0) {
-                        completeTeleport(task);
-                        if (task.foliaTask != null) task.foliaTask.cancel();
-                        return;
-                    }
-                    sendActionBar(player, "§7Teleporting in §b" + task.countdown + "s");
-                    task.countdown--;
-                } else {
-                    sendActionBar(player, "§7Searching for safe location...");
+                if (task.countdown <= 0) {
+                    completeTeleport(task);
+                    if (task.foliaTask != null) task.foliaTask.cancel();
+                    return;
                 }
+                sendActionBar(player, "§7Teleporting in §b" + task.countdown + "s");
+                task.countdown--;
             }, 0, 1, TimeUnit.SECONDS);
             task.taskId = 1;
         } else {
@@ -255,16 +289,12 @@ public class DonutRTP extends JavaPlugin {
                     return;
                 }
                 
-                if (task.safeLocation != null) {
-                    if (task.countdown <= 0) {
-                        completeTeleport(task);
-                        return;
-                    }
-                    sendActionBar(player, "§7Teleporting in §b" + task.countdown + "s");
-                    task.countdown--;
-                } else {
-                    sendActionBar(player, "§7Searching for safe location...");
+                if (task.countdown <= 0) {
+                    completeTeleport(task);
+                    return;
                 }
+                sendActionBar(player, "§7Teleporting in §b" + task.countdown + "s");
+                task.countdown--;
             }, 0L, 20L);
         }
     }
@@ -303,11 +333,24 @@ public class DonutRTP extends JavaPlugin {
         });
     }
 
-    private void cancelTeleportTask(UUID playerId) {
-        TeleportTask existing = teleportTasks.remove(playerId);
-        if (existing != null && existing.taskId != -1) {
-            Bukkit.getScheduler().cancelTask(existing.taskId);
+    private void cancelTeleportTask(UUID playerId, String message) {
+        TeleportTask task = teleportTasks.remove(playerId);
+        if (task != null) {
+            if (task.taskId != -1 && !getServer().getPluginManager().isPluginEnabled("Folia")) {
+                Bukkit.getScheduler().cancelTask(task.taskId);
+            } else if (task.foliaTask != null) {
+                task.foliaTask.cancel();
+            }
+            
+            // Send cancellation message if player is online and message is provided
+            if (task.player != null && task.player.isOnline() && message != null) {
+                sendActionBar(task.player, message);
+            }
         }
+    }
+    
+    private void cancelTeleportTask(UUID playerId) {
+        cancelTeleportTask(playerId, null);
     }
 
     @Override

@@ -16,7 +16,6 @@ messages:
   teleport-success: '&7You have been teleported to a random location!'
   cooldown-message: '&7You must wait &b{time} &7seconds before using this command again!'
   teleport-failed: '&7Could not find a safe location after &b%attempts% &7attempts! Please try again.'
-  searching: '&7Searching for a safe location...'
   player-only: '&7This command can only be used by players!'
   cooldown-bypass: '&7Cooldown bypassed!'
   config-reloaded: '&7Configuration has been reloaded!'
